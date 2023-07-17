@@ -1,6 +1,5 @@
-public struct Web3Actor {
-    public private(set) var text = "Hello, World!"
-
-    public init() {
-    }
+@globalActor
+actor Web3Actor {
+    static var shared = Web3Actor()
+    private init() {}
 }
