@@ -16,6 +16,7 @@ let package = Package(
         // Dependencies declare other packages that this package depends on.
         // .package(url: /* package url */, from: "1.0.0"),
         .package(url: "https://github.com/Boilertalk/Web3.swift.git", from: "0.6.0"),
+        .package(url: "https://github.com/WalletConnect/WalletConnectSwiftV2", branch: "main"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
