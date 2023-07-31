@@ -19,7 +19,7 @@ let package = Package(
         // Dependencies declare other packages that this package depends on.
         // .package(url: /* package url */, from: "1.0.0"),
         .package(url: "https://github.com/Boilertalk/Web3.swift.git", from: "0.6.0"),
-        .package(url: "https://github.com/WalletConnect/WalletConnectSwiftV2", branch: "main"),
+        .package(url: "https://github.com/WalletConnect/WalletConnectSwiftV2", from: "1.6.14"),
         .package(url: "https://github.com/Moya/Moya.git", .upToNextMajor(from: "15.0.0")),
     ],
     targets: [
