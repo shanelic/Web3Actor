@@ -67,6 +67,29 @@ actor Web3Actor {
     }
 }
 
+extension Web3Actor {
+    
+    public func getDynamicContract(_ name: String) -> DynamicContract? {
+        return contracts[name] as? DynamicContract
+    }
+    
+    public func getDynamicContractMethods(name: String) -> [String] {
+        guard let contract = contracts[name] as? DynamicContract else { return [] }
+        return contract.methods.keys.sorted()
+    }
+    
+    public func getDynamicMethodInputs(name: String, method: String) -> [String: SolidityType] {
+        guard let contract = contracts[name] as? DynamicContract, let method = contract.methods[method] else { return [:] }
+        return method.inputs.reduce(into: [:]) { $0[$1.name] = $1.type }
+    }
+    
+    public func makeDynamicMethodRequest(name: String, method: String, inputs: [ABIEncodable]) -> SolidityInvocation? {
+        guard let contract = contracts[name] as? DynamicContract else { return nil }
+        guard let method = contract.methods[method] as? BetterInvocation else { return nil }
+        return method.betterInvoke(inputs)
+    }
+}
+
 class ActorHelper {
     static var shared = ActorHelper()
     var openseaApiKey: String!
