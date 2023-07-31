@@ -30,7 +30,7 @@ actor Web3Actor {
     
     public func switchRpcServer(_ rpcServer: Network.RpcServer) async {
         guard let version = try? await Web3(rpcURL: rpcServer.url).clientVersion().async() else { return }
-        innerPrint("the version of rpc server just initialized is: \(version)")
+        print("--- the version of rpc server just initialized is: \(version)")
         self.web3 = Web3(rpcURL: rpcServer.url)
     }
     
@@ -45,6 +45,25 @@ actor Web3Actor {
     
     public func removeAllContracts() {
         contracts = [:]
+    }
+    
+    public func getBalance(of address: EthereumAddress) async throws -> EthereumQuantity {
+        guard let web3 else { throw TestError.general("web3 not initialized") }
+        return try await web3.eth.getBalance(address: address, block: .latest).async()
+    }
+    
+    public func addDynamicContract(name: String, address: EthereumAddress, abiData: Data, abiKey: String? = nil) async throws {
+        guard let web3 else { return }
+        guard !contracts.keys.contains(name) else { return }
+        if try await isAddressContract(address) {
+            contracts[name] = try web3.eth.Contract(json: abiData, abiKey: abiKey, address: address)
+        }
+    }
+    
+    private func isAddressContract(_ address: EthereumAddress) async throws -> Bool {
+        guard let web3 else { throw TestError.general("web3 not initialized") }
+        let code = try await web3.eth.getCode(address: address, block: .latest).async()
+        return code.hex() != "0x"
     }
 }
 
