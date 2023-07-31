@@ -48,7 +48,7 @@ actor Web3Actor {
     }
     
     public func getBalance(of address: EthereumAddress) async throws -> EthereumQuantity {
-        guard let web3 else { throw TestError.general("web3 not initialized") }
+        guard let web3 else { throw W3AError.web3NotInitialized }
         return try await web3.eth.getBalance(address: address, block: .latest).async()
     }
     
@@ -61,7 +61,7 @@ actor Web3Actor {
     }
     
     private func isAddressContract(_ address: EthereumAddress) async throws -> Bool {
-        guard let web3 else { throw TestError.general("web3 not initialized") }
+        guard let web3 else { throw W3AError.web3NotInitialized }
         let code = try await web3.eth.getCode(address: address, block: .latest).async()
         return code.hex() != "0x"
     }
@@ -71,4 +71,9 @@ class ActorHelper {
     static var shared = ActorHelper()
     var openseaApiKey: String!
     var etherscanApiKey: String!
+}
+
+enum W3AError: Error {
+    case web3NotInitialized
+    case abiDecodingFailed
 }
