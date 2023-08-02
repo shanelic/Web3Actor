@@ -16,7 +16,7 @@ final public class API {
     private init() {}
     private let provider = MoyaProvider<MultiTarget>()
     
-    func request<Request: DecodableResponseTargetType>(_ request: Request) -> AnyPublisher<Request.ResponseType, MoyaError> {
+    public func request<Request: DecodableResponseTargetType>(_ request: Request) -> AnyPublisher<Request.ResponseType, MoyaError> {
         let target = MultiTarget.init(request)
         return provider
             .requestPublisher(target)
@@ -25,7 +25,7 @@ final public class API {
     }
 }
 
-protocol DecodableResponseTargetType: TargetType {
+public protocol DecodableResponseTargetType: TargetType {
     associatedtype ResponseType: Decodable
 }
 
