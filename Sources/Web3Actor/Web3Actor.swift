@@ -5,8 +5,8 @@ import Web3ContractABI
 import Web3PromiseKit
 
 @globalActor
-actor Web3Actor {
-    static var shared = Web3Actor()
+public actor Web3Actor {
+    public static var shared = Web3Actor()
     private init() {}
     
     private var cancellables = [AnyCancellable]()
