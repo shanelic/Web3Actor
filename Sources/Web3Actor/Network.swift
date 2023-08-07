@@ -74,7 +74,7 @@ public struct Network {
         chainId: 1337,
         nativeCurrency: Currency(name: "POMO Ether", symbol: "POMO"),
         rpcServers: [
-            RpcServer(url: "https://dev-ganache.pomo.network/:9527", type: .http)
+            RpcServer(url: "https://dev-ganache.pomo.network", type: .http)
         ],
         multicall3: "0xca11bde05977b3631167028862be2a173976ca11",
         chainIdentity: .pomo
