@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Opensea {
+public struct Opensea {
     
     // MARK: BASIC
     
@@ -24,7 +24,7 @@ struct Opensea {
         case pomo
     }
     
-    struct AssetContract: Codable {
+    public struct AssetContract: Codable {
         let address: String
         let chainIdentifier: ChainIdentity
         let name: String
@@ -42,7 +42,7 @@ struct Opensea {
         var abiData: Data? = nil
     }
     
-    struct Collection: Codable {
+    public struct Collection: Codable {
         let primaryAssetContracts: [AssetContract]
         let ownedAssetCount: Int
         
