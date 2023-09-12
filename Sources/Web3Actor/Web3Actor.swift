@@ -52,11 +52,82 @@ public actor Web3Actor {
         return try await web3.eth.getBalance(address: address, block: .latest).async()
     }
     
+    //    public func addErc20Contract(name: String, address: EthereumAddress) async throws {
+    //        guard let web3 else { return }
+    //        guard !contracts.keys.contains(name) else { return }
+    //        if try await isAddressContract(address) {
+    //            contracts[name] = web3.eth.Contract(type: GenericERC20Contract.self, address: address)
+    //        }
+    //    }
+    //
+    //    public func addErc721Contract(name: String, address: EthereumAddress) async throws {
+    //        guard let web3 else { return }
+    //        guard !contracts.keys.contains(name) else { return }
+    //        if try await isAddressContract(address) {
+    //            contracts[name] = web3.eth.Contract(type: GenericERC721Contract.self, address: address)
+    //        }
+    //    }
+    
+    public func retrieveCollections(for address: EthereumAddress) async throws -> [Opensea.Collection] {
+        return try await withCheckedThrowingContinuation { continuation in
+            API.shared.request(OpenseaAPIs.retriveCollections(address: address.hex(eip55: true)))
+                .sink { result in
+                    switch result {
+                    case .finished:
+                        print("--- reload holdings finished with continuation")
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
+                } receiveValue: { collections in
+                    continuation.resume(returning: collections)
+                }
+                .store(in: &cancellables)
+        }
+    }
+    
     public func addDynamicContract(name: String, address: EthereumAddress, abiData: Data, abiKey: String? = nil) async throws {
         guard let web3 else { return }
         guard !contracts.keys.contains(name) else { return }
         if try await isAddressContract(address) {
             contracts[name] = try web3.eth.Contract(json: abiData, abiKey: abiKey, address: address)
+        }
+    }
+    
+    private func getContractAbi(contract address: EthereumAddress) async throws -> Data {
+        return try await withCheckedThrowingContinuation { continuation in
+            API.shared.request(EtherscanAPIs.AbiFromContract(address: address.hex(eip55: true)))
+                .sink { result in
+                    switch result {
+                    case .finished:
+                        print("--- fetching abi of \(address.hex(eip55: true)) from etherscan finished.")
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
+                } receiveValue: { esResponse in
+                    guard let abiString = esResponse.result.safeAbiStringFiltered, let abiData = abiString.data(using: .utf8) else {
+                        continuation.resume(throwing: W3AError.abiDecodingFailed)
+                        return
+                    }
+                    continuation.resume(returning: abiData)
+                }
+                .store(in: &self.cancellables)
+        }
+    }
+    
+    private func addContracts(_ collections: [Opensea.Collection]) async throws {
+        for collection in collections {
+            for contract in collection.validAssetContracts {
+                if let abiData = contract.abiData, let contractAddress = EthereumAddress(hexString: contract.address) {
+                    try await addDynamicContract(name: "\(contract.name) - \(contract.address)", address: contractAddress, abiData: abiData)
+                } else {
+                    switch contract.schemaName {
+                    default:
+                        guard let contractAddress = EthereumAddress(hexString: contract.address) else { continue }
+                        let abiData = try await getContractAbi(contract: contractAddress)
+                        try await addDynamicContract(name: "\(contract.name) - \(contract.address)", address: contractAddress, abiData: abiData)
+                    }
+                }
+            }
         }
     }
     
