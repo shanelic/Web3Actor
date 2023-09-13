@@ -18,7 +18,8 @@ public actor Web3Actor {
     
     @Published public var collectibles: [Opensea.Collection] = []
     
-    public func initialize(_ network: Network? = nil, openseaApiKey: String? = nil, etherscanApiKey: String? = nil) {
+    public func initialize(_ network: Network, openseaApiKey: String? = nil, etherscanApiKey: String? = nil) async {
+        await switchNetwork(network)
         ActorHelper.shared.openseaApiKey = openseaApiKey
         ActorHelper.shared.etherscanApiKey = etherscanApiKey
     }
