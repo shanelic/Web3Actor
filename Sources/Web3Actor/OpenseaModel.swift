@@ -67,8 +67,8 @@ public struct Opensea {
         let description: String
         let imageUrl: String
         let metadataUrl: String
-        let createdAt: Date
-        let updatedAt: Date
+//        let createdAt: Date
+//        let updatedAt: Date
         let isDisabled: Bool
         let isNsfw: Bool
         
@@ -81,8 +81,8 @@ public struct Opensea {
             case description
             case imageUrl = "image_url"
             case metadataUrl = "metadata_url"
-            case createdAt = "created_at"
-            case updatedAt = "updated_at"
+//            case createdAt = "created_at"
+//            case updatedAt = "updated_at"
             case isDisabled = "is_disabled"
             case isNsfw = "is_nsfw"
         }
@@ -90,5 +90,9 @@ public struct Opensea {
         struct NextCursor: Codable {
             let next: String
         }
+    }
+    
+    public struct NFTResponse: Codable {
+        let nfts: [NFT]
     }
 }

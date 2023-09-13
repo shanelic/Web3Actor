@@ -131,7 +131,7 @@ public actor Web3Actor {
                 case .success(let nfts):
                     let decoder = JSONDecoder()
                     let nextCursor = try? decoder.decode(Opensea.NFT.NextCursor.self, from: response.data ?? Data())
-                    continuation.resume(returning: (nfts, nextCursor?.next))
+                    continuation.resume(returning: (nfts.nfts, nextCursor?.next))
                 case .failure(let error):
                     continuation.resume(throwing: error)
                 }
