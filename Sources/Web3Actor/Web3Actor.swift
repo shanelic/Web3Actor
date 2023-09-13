@@ -63,6 +63,14 @@ public actor Web3Actor {
         try await addContracts(collectibles)
     }
     
+    /// This function is not ready to go production, it uses the testnet api from Opensea.
+    /// This is only for personal usage now.
+    public func getNFTs(of address: EthereumAddress, nextCursor: String? = nil) async throws -> String? {
+        let (nfts, cursor) = try await retrieveNFTs(for: address, limit: 20, nextCursor: nextCursor)
+        print("--- \(nfts.count) NFT(s) loaded from OpenSea.", nfts.map(\.name))
+        return cursor
+    }
+    
     public func addDynamicContract(name: String, address: EthereumAddress, abiData: Data, abiKey: String? = nil) async throws {
         guard let web3 else { return }
         guard !contracts.keys.contains(name) else { return }
@@ -120,13 +128,14 @@ public actor Web3Actor {
             ]
             if let nextCursor { parameters["next"] = nextCursor }
             AF.request(
-                "https://api.opensea.io/api/v2/chain/\(connectedNetwork.chainIdentity.rawValue)/account/\(address.hex(eip55: true))/nfts",
-                parameters: parameters,
-                headers: [
-                    "Accept": "application/json",
-                    "X-API-KEY": ActorHelper.shared.openseaApiKey,
-                ])
-            .responseDecodable(of: [Opensea.NFT].self) { response in
+                "https://testnets-api.opensea.io/api/v2/chain/\(connectedNetwork.chainIdentity.rawValue)/account/\(address.hex(eip55: true))/nfts",
+                parameters: parameters
+//                headers: [
+//                    "Accept": "application/json",
+//                    "X-API-KEY": ActorHelper.shared.openseaApiKey,
+//                ]
+            )
+            .responseDecodable(of: Opensea.NFTResponse.self) { response in
                 switch response.result {
                 case .success(let nfts):
                     let decoder = JSONDecoder()
