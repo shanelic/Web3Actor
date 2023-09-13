@@ -12,28 +12,30 @@ public actor Web3Actor {
     private var cancellables = [AnyCancellable]()
     
     private var web3: Web3?
+    private var connectedNetwork: Network?
     private var contracts: [String: EthereumContract] = [:]
     
     @Published public var collectibles: [Opensea.Collection] = []
     
-    public func initializeRpcServer(_ network: Network? = nil) async {
-        if let rpcServer = network?.rpcServers.first {
-            await switchRpcServer(rpcServer)
-        } else {
-            guard let rpcServer = Network.EthereumMainnet.rpcServers.first else { return }
-            await switchRpcServer(rpcServer)
-        }
-    }
-    
-    public func initializeApis(openseaApiKey: String? = nil, etherscanApiKey: String? = nil) {
+    public func initialize(_ network: Network? = nil, openseaApiKey: String? = nil, etherscanApiKey: String? = nil) {
         ActorHelper.shared.openseaApiKey = openseaApiKey
         ActorHelper.shared.etherscanApiKey = etherscanApiKey
     }
     
-    public func switchRpcServer(_ rpcServer: Network.RpcServer) async {
-        guard let version = try? await Web3(rpcURL: rpcServer.url).clientVersion().async() else { return }
+    public func switchNetwork(_ network: Network) async {
+        for rpcServer in (network.rpcServers.isEmpty ? Network.EthereumMainnet : network).rpcServers {
+            if await connect(to: rpcServer) {
+                connectedNetwork = network.rpcServers.isEmpty ? Network.EthereumMainnet : network
+                break
+            }
+        }
+    }
+    
+    private func connect(to rpcServer: Network.RpcServer) async -> Bool {
+        guard let version = try? await Web3(rpcURL: rpcServer.url).clientVersion().async() else { return false }
         print("--- the version of rpc server just initialized is: \(version)")
         self.web3 = Web3(rpcURL: rpcServer.url)
+        return true
     }
     
     public func getContracts() -> [String] {
@@ -59,6 +61,14 @@ public actor Web3Actor {
         try await addContracts(collectibles)
     }
     
+    public func addDynamicContract(name: String, address: EthereumAddress, abiData: Data, abiKey: String? = nil) async throws {
+        guard let web3 else { return }
+        guard !contracts.keys.contains(name) else { return }
+        if try await isAddressContract(address) {
+            contracts[name] = try web3.eth.Contract(json: abiData, abiKey: abiKey, address: address)
+        }
+    }
+    
     private func retrieveCollections(for address: EthereumAddress) async throws -> [Opensea.Collection] {
         return try await withCheckedThrowingContinuation { continuation in
             API.shared.request(OpenseaAPIs.retrieveCollections(address: address.hex(eip55: true)))
@@ -73,14 +83,6 @@ public actor Web3Actor {
                     continuation.resume(returning: collections)
                 }
                 .store(in: &cancellables)
-        }
-    }
-    
-    public func addDynamicContract(name: String, address: EthereumAddress, abiData: Data, abiKey: String? = nil) async throws {
-        guard let web3 else { return }
-        guard !contracts.keys.contains(name) else { return }
-        if try await isAddressContract(address) {
-            contracts[name] = try web3.eth.Contract(json: abiData, abiKey: abiKey, address: address)
         }
     }
     
