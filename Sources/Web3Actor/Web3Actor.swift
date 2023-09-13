@@ -61,7 +61,7 @@ public actor Web3Actor {
     
     private func retrieveCollections(for address: EthereumAddress) async throws -> [Opensea.Collection] {
         return try await withCheckedThrowingContinuation { continuation in
-            API.shared.request(OpenseaAPIs.retriveCollections(address: address.hex(eip55: true)))
+            API.shared.request(OpenseaAPIs.retrieveCollections(address: address.hex(eip55: true)))
                 .sink { result in
                     switch result {
                     case .finished:

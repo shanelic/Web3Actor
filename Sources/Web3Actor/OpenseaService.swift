@@ -32,7 +32,7 @@ enum OpenseaAPIs {}
 // MARK: Assets
 
 extension OpenseaAPIs {
-    struct retriveCollections: OpenseaTargetType {
+    struct retrieveCollections: OpenseaTargetType {
         typealias ResponseType = [Opensea.Collection]
         var method: Moya.Method { .get }
         var path: String { "/v1/collections" }
