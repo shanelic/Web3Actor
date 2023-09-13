@@ -65,7 +65,7 @@ public struct Opensea {
         let tokenStandard: ERC
         let name: String
         let description: String
-        let imageUrl: String
+        let imageUrl: String?
         let metadataUrl: String
 //        let createdAt: Date
 //        let updatedAt: Date
