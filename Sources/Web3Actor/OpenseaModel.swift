@@ -57,4 +57,42 @@ public struct Opensea {
             return primaryAssetContracts.filter { $0.chainIdentifier == appliedChain }
         }
     }
+    
+    public struct NFT: Codable {
+        let identifier: String
+        let collection: String
+        let contract: String
+        let tokenStandard: ERC
+        let name: String
+        let description: String
+        let imageUrl: String?
+        let metadataUrl: String
+//        let createdAt: Date
+//        let updatedAt: Date
+        let isDisabled: Bool
+        let isNsfw: Bool
+        
+        enum CodingKeys: String, CodingKey {
+            case identifier
+            case collection
+            case contract
+            case tokenStandard = "token_standard"
+            case name
+            case description
+            case imageUrl = "image_url"
+            case metadataUrl = "metadata_url"
+//            case createdAt = "created_at"
+//            case updatedAt = "updated_at"
+            case isDisabled = "is_disabled"
+            case isNsfw = "is_nsfw"
+        }
+        
+        struct NextCursor: Codable {
+            let next: String
+        }
+    }
+    
+    public struct NFTResponse: Codable {
+        let nfts: [NFT]
+    }
 }

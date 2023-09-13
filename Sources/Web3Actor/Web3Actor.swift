@@ -3,6 +3,7 @@ import Combine
 import Web3
 import Web3ContractABI
 import Web3PromiseKit
+import Alamofire
 
 @globalActor
 public actor Web3Actor {
@@ -12,28 +13,31 @@ public actor Web3Actor {
     private var cancellables = [AnyCancellable]()
     
     private var web3: Web3?
+    private var connectedNetwork: Network?
     private var contracts: [String: EthereumContract] = [:]
     
     @Published public var collectibles: [Opensea.Collection] = []
     
-    public func initializeRpcServer(_ network: Network? = nil) async {
-        if let rpcServer = network?.rpcServers.first {
-            await switchRpcServer(rpcServer)
-        } else {
-            guard let rpcServer = Network.EthereumMainnet.rpcServers.first else { return }
-            await switchRpcServer(rpcServer)
-        }
-    }
-    
-    public func initializeApis(openseaApiKey: String? = nil, etherscanApiKey: String? = nil) {
+    public func initialize(_ network: Network, openseaApiKey: String? = nil, etherscanApiKey: String? = nil) async {
+        await switchNetwork(network)
         ActorHelper.shared.openseaApiKey = openseaApiKey
         ActorHelper.shared.etherscanApiKey = etherscanApiKey
     }
     
-    public func switchRpcServer(_ rpcServer: Network.RpcServer) async {
-        guard let version = try? await Web3(rpcURL: rpcServer.url).clientVersion().async() else { return }
+    public func switchNetwork(_ network: Network) async {
+        for rpcServer in (network.rpcServers.isEmpty ? Network.EthereumMainnet : network).rpcServers {
+            if await connect(to: rpcServer) {
+                connectedNetwork = network.rpcServers.isEmpty ? Network.EthereumMainnet : network
+                break
+            }
+        }
+    }
+    
+    private func connect(to rpcServer: Network.RpcServer) async -> Bool {
+        guard let version = try? await Web3(rpcURL: rpcServer.url).clientVersion().async() else { return false }
         print("--- the version of rpc server just initialized is: \(version)")
         self.web3 = Web3(rpcURL: rpcServer.url)
+        return true
     }
     
     public func getContracts() -> [String] {
@@ -59,9 +63,25 @@ public actor Web3Actor {
         try await addContracts(collectibles)
     }
     
+    /// This function is not ready to go production, it uses the testnet api from Opensea.
+    /// This is only for personal usage now.
+    public func getNFTs(of address: EthereumAddress, nextCursor: String? = nil) async throws -> String? {
+        let (nfts, cursor) = try await retrieveNFTs(for: address, limit: 20, nextCursor: nextCursor)
+        print("--- \(nfts.count) NFT(s) loaded from OpenSea.", nfts.map(\.name))
+        return cursor
+    }
+    
+    public func addDynamicContract(name: String, address: EthereumAddress, abiData: Data, abiKey: String? = nil) async throws {
+        guard let web3 else { return }
+        guard !contracts.keys.contains(name) else { return }
+        if try await isAddressContract(address) {
+            contracts[name] = try web3.eth.Contract(json: abiData, abiKey: abiKey, address: address)
+        }
+    }
+    
     private func retrieveCollections(for address: EthereumAddress) async throws -> [Opensea.Collection] {
         return try await withCheckedThrowingContinuation { continuation in
-            API.shared.request(OpenseaAPIs.retriveCollections(address: address.hex(eip55: true)))
+            API.shared.request(OpenseaAPIs.retrieveCollections(address: address.hex(eip55: true)))
                 .sink { result in
                     switch result {
                     case .finished:
@@ -76,11 +96,55 @@ public actor Web3Actor {
         }
     }
     
-    public func addDynamicContract(name: String, address: EthereumAddress, abiData: Data, abiKey: String? = nil) async throws {
-        guard let web3 else { return }
-        guard !contracts.keys.contains(name) else { return }
-        if try await isAddressContract(address) {
-            contracts[name] = try web3.eth.Contract(json: abiData, abiKey: abiKey, address: address)
+    private func retrieveNFTs(for address: EthereumAddress, limit: Int, nextCursor: String? = nil) async throws -> ([Opensea.NFT], String?) {
+        return try await withCheckedThrowingContinuation { continuation in
+            guard let connectedNetwork else {
+                continuation.resume(throwing: W3AError.web3NotInitialized)
+                return
+            }
+            /// in case the `next` property is not always there, I have to change the way fetching data.
+//            API.shared.request(
+//                OpenseaAPIs.retrieveNFTs(
+//                    address: address.hex(eip55: true),
+//                    chain: connectedNetwork.chainIdentity,
+//                    limit: limit,
+//                    nextCursor: nextCursor
+//                ),
+//                keyPath: "nfts"
+//            )
+//            .sink { result in
+//                switch result {
+//                case .finished:
+//                    print("--- reload NFTs finished with continuation")
+//                case .failure(let error):
+//                    continuation.resume(throwing: error)
+//                }
+//            } receiveValue: { nfts in
+//                continuation.resume(returning: nfts)
+//            }
+//            .store(in: &cancellables)
+            var parameters: Parameters = [
+                "limit": limit,
+            ]
+            if let nextCursor { parameters["next"] = nextCursor }
+            AF.request(
+                "https://testnets-api.opensea.io/api/v2/chain/\(connectedNetwork.chainIdentity.rawValue)/account/\(address.hex(eip55: true))/nfts",
+                parameters: parameters
+//                headers: [
+//                    "Accept": "application/json",
+//                    "X-API-KEY": ActorHelper.shared.openseaApiKey,
+//                ]
+            )
+            .responseDecodable(of: Opensea.NFTResponse.self) { response in
+                switch response.result {
+                case .success(let nfts):
+                    let decoder = JSONDecoder()
+                    let nextCursor = try? decoder.decode(Opensea.NFT.NextCursor.self, from: response.data ?? Data())
+                    continuation.resume(returning: (nfts.nfts, nextCursor?.next))
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
         }
     }
     

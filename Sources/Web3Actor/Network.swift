@@ -115,4 +115,10 @@ public enum ERC: String, Codable {
             self = .unknown
         }
     }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let stringValue = try container.decode(String.self)
+        self.init(stringValue)
+    }
 }
