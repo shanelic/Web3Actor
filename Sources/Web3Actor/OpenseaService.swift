@@ -59,4 +59,33 @@ extension OpenseaAPIs {
         
         
     }
+    
+    struct retrieveNFTs: OpenseaTargetType {
+        typealias ResponseType = [Opensea.NFT]
+        
+        var method: Moya.Method { .get }
+        var path: String { "/v2/chain/\(chain)/account/\(address)/nfts" }
+        var task: Task {
+            var parameters: [String: Any] = [
+                "limit": limit,
+            ]
+            if let nextCursor { parameters["next"] = nextCursor }
+            return .requestParameters(parameters: parameters, encoding: URLEncoding.queryString)
+        }
+        
+        private let address: String
+        private let chain: String
+        private let limit: Int
+        private let nextCursor: String?
+        
+        /// - Parameters:
+        ///   - address: the address as search target
+        ///   - chain: the chain on which wearching, using chain identifier
+        init(address: String, chain: Opensea.ChainIdentity, limit: Int = 50, nextCursor: String? = nil) {
+            self.address = address
+            self.chain = chain.rawValue
+            self.limit = limit
+            self.nextCursor = nextCursor
+        }
+    }
 }

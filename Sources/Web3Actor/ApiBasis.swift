@@ -16,12 +16,12 @@ final public class API {
     private init() {}
     private let provider = MoyaProvider<MultiTarget>()
     
-    public func request<Request: DecodableResponseTargetType>(_ request: Request) -> AnyPublisher<Request.ResponseType, MoyaError> {
+    public func request<Request: DecodableResponseTargetType>(_ request: Request, keyPath: String? = nil) -> AnyPublisher<Request.ResponseType, MoyaError> {
         let target = MultiTarget.init(request)
         return provider
             .requestPublisher(target)
             .filterSuccessfulStatusCodes()
-            .map(Request.ResponseType.self)
+            .map(Request.ResponseType.self, atKeyPath: keyPath)
     }
 }
 

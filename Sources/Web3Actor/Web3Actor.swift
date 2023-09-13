@@ -86,6 +86,28 @@ public actor Web3Actor {
         }
     }
     
+    private func retrieveNFTs(for address: EthereumAddress) async throws -> [Opensea.NFT] {
+        return try await withCheckedThrowingContinuation { continuation in
+            guard let connectedNetwork else {
+                continuation.resume(throwing: W3AError.web3NotInitialized)
+                return
+            }
+            /// in case the `next` property is not always there, I have to change the way fetching data.
+            API.shared.request(OpenseaAPIs.retrieveNFTs(address: address.hex(eip55: true), chain: connectedNetwork.chainIdentity), keyPath: "nfts")
+                .sink { result in
+                    switch result {
+                    case .finished:
+                        print("--- reload NFTs finished with continuation")
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
+                } receiveValue: { nfts in
+                    continuation.resume(returning: nfts)
+                }
+                .store(in: &cancellables)
+        }
+    }
+    
     private func getContractAbi(contract address: EthereumAddress) async throws -> Data {
         return try await withCheckedThrowingContinuation { continuation in
             API.shared.request(EtherscanAPIs.AbiFromContract(address: address.hex(eip55: true)))
