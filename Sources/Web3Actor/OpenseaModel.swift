@@ -86,5 +86,9 @@ public struct Opensea {
             case isDisabled = "is_disabled"
             case isNsfw = "is_nsfw"
         }
+        
+        struct NextCursor: Codable {
+            let next: String
+        }
     }
 }

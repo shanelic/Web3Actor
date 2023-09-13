@@ -3,6 +3,7 @@ import Combine
 import Web3
 import Web3ContractABI
 import Web3PromiseKit
+import Alamofire
 
 @globalActor
 public actor Web3Actor {
@@ -86,25 +87,54 @@ public actor Web3Actor {
         }
     }
     
-    private func retrieveNFTs(for address: EthereumAddress) async throws -> [Opensea.NFT] {
+    private func retrieveNFTs(for address: EthereumAddress, limit: Int, nextCursor: String? = nil) async throws -> ([Opensea.NFT], String?) {
         return try await withCheckedThrowingContinuation { continuation in
             guard let connectedNetwork else {
                 continuation.resume(throwing: W3AError.web3NotInitialized)
                 return
             }
             /// in case the `next` property is not always there, I have to change the way fetching data.
-            API.shared.request(OpenseaAPIs.retrieveNFTs(address: address.hex(eip55: true), chain: connectedNetwork.chainIdentity), keyPath: "nfts")
-                .sink { result in
-                    switch result {
-                    case .finished:
-                        print("--- reload NFTs finished with continuation")
-                    case .failure(let error):
-                        continuation.resume(throwing: error)
-                    }
-                } receiveValue: { nfts in
-                    continuation.resume(returning: nfts)
+//            API.shared.request(
+//                OpenseaAPIs.retrieveNFTs(
+//                    address: address.hex(eip55: true),
+//                    chain: connectedNetwork.chainIdentity,
+//                    limit: limit,
+//                    nextCursor: nextCursor
+//                ),
+//                keyPath: "nfts"
+//            )
+//            .sink { result in
+//                switch result {
+//                case .finished:
+//                    print("--- reload NFTs finished with continuation")
+//                case .failure(let error):
+//                    continuation.resume(throwing: error)
+//                }
+//            } receiveValue: { nfts in
+//                continuation.resume(returning: nfts)
+//            }
+//            .store(in: &cancellables)
+            var parameters: Parameters = [
+                "limit": limit,
+            ]
+            if let nextCursor { parameters["next"] = nextCursor }
+            AF.request(
+                "https://api.opensea.io/api/v2/chain/\(connectedNetwork.chainIdentity.rawValue)/account/\(address.hex(eip55: true))/nfts",
+                parameters: parameters,
+                headers: [
+                    "Accept": "application/json",
+                    "X-API-KEY": ActorHelper.shared.openseaApiKey,
+                ])
+            .responseDecodable(of: [Opensea.NFT].self) { response in
+                switch response.result {
+                case .success(let nfts):
+                    let decoder = JSONDecoder()
+                    let nextCursor = try? decoder.decode(Opensea.NFT.NextCursor.self, from: response.data ?? Data())
+                    continuation.resume(returning: (nfts, nextCursor?.next))
+                case .failure(let error):
+                    continuation.resume(throwing: error)
                 }
-                .store(in: &cancellables)
+            }
         }
     }
     

@@ -81,7 +81,7 @@ extension OpenseaAPIs {
         /// - Parameters:
         ///   - address: the address as search target
         ///   - chain: the chain on which wearching, using chain identifier
-        init(address: String, chain: Opensea.ChainIdentity, limit: Int = 50, nextCursor: String? = nil) {
+        init(address: String, chain: Opensea.ChainIdentity, limit: Int, nextCursor: String?) {
             self.address = address
             self.chain = chain.rawValue
             self.limit = limit
