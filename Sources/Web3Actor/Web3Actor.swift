@@ -17,7 +17,7 @@ public actor Web3Actor {
     private var contracts: [String: EthereumContract] = [:]
     
     @Published public var collectibles: [Opensea.Collection] = []
-    @Published private(set) var nfts: Set<Opensea.NFT> = []
+    @Published public private(set) var nfts: Set<Opensea.NFT> = []
     
     public func initialize(_ network: Network, openseaApiKey: String? = nil, etherscanApiKey: String? = nil) async {
         await switchNetwork(network)
