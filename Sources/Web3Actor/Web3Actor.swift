@@ -17,7 +17,7 @@ public actor Web3Actor {
     private var contracts: [String: EthereumContract] = [:]
     
     @Published public var collectibles: [Opensea.Collection] = []
-    @Published public private(set) var nfts: Set<Opensea.NFT> = []
+    @Published public private(set) var nfts: [Opensea.NFT] = []
     
     public func initialize(_ network: Network, openseaApiKey: String? = nil, etherscanApiKey: String? = nil) async {
         await switchNetwork(network)
@@ -29,6 +29,7 @@ public actor Web3Actor {
         for rpcServer in (network.rpcServers.isEmpty ? Network.EthereumMainnet : network).rpcServers {
             if await connect(to: rpcServer) {
                 connectedNetwork = network.rpcServers.isEmpty ? Network.EthereumMainnet : network
+                resetNFTs()
                 break
             }
         }
@@ -54,6 +55,10 @@ public actor Web3Actor {
         contracts = [:]
     }
     
+    public func resetNFTs() {
+        nfts = []
+    }
+    
     public func getBalance(of address: EthereumAddress) async throws -> EthereumQuantity {
         guard let web3 else { throw W3AError.web3NotInitialized }
         return try await web3.eth.getBalance(address: address, block: .latest).async()
@@ -68,7 +73,11 @@ public actor Web3Actor {
     /// This is only for personal usage now.
     public func getNFTs(of address: EthereumAddress, nextCursor: String? = nil) async throws -> String? {
         let (nfts, cursor) = try await retrieveNFTs(for: address, limit: 20, nextCursor: nextCursor)
-        self.nfts.formUnion(nfts)
+        for nft in nfts {
+            if !self.nfts.contains(nft) {
+                self.nfts.append(nft)
+            }
+        }
         print("--- \(nfts.count) NFT(s) loaded from OpenSea.", nfts.map(\.name))
         return cursor
     }
