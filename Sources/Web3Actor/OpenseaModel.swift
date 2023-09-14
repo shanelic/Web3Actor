@@ -83,7 +83,7 @@ public struct Opensea {
             self.tokenStandard = try container.decode(ERC.self, forKey: .tokenStandard)
             self.name = try container.decode(String.self, forKey: .name)
             self.description = try container.decode(String.self, forKey: .description)
-            self.imageUrl = try container.decode(String.self, forKey: .imageUrl)
+            self.imageUrl = try container.decode(Optional<String>.self, forKey: .imageUrl)
             self.metadataUrl = try container.decode(String.self, forKey: .metadataUrl)
             self.isDisabled = try container.decode(Bool.self, forKey: .isDisabled)
             self.isNsfw = try container.decode(Bool.self, forKey: .isNsfw)
