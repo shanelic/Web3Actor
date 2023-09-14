@@ -58,7 +58,10 @@ public struct Opensea {
         }
     }
     
-    public struct NFT: Codable, Hashable {
+    public struct NFT: Codable, Hashable, Identifiable {
+        
+        public var id: UUID
+        
         let identifier: String
         public let collection: String
         let contract: String
@@ -71,6 +74,21 @@ public struct Opensea {
 //        let updatedAt: Date
         let isDisabled: Bool
         let isNsfw: Bool
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.identifier = try container.decode(String.self, forKey: .identifier)
+            self.collection = try container.decode(String.self, forKey: .collection)
+            self.contract = try container.decode(String.self, forKey: .contract)
+            self.tokenStandard = try container.decode(ERC.self, forKey: .tokenStandard)
+            self.name = try container.decode(String.self, forKey: .name)
+            self.description = try container.decode(String.self, forKey: .description)
+            self.imageUrl = try container.decode(String.self, forKey: .imageUrl)
+            self.metadataUrl = try container.decode(String.self, forKey: .metadataUrl)
+            self.isDisabled = try container.decode(Bool.self, forKey: .isDisabled)
+            self.isNsfw = try container.decode(Bool.self, forKey: .isNsfw)
+            self.id = UUID()
+        }
         
         enum CodingKeys: String, CodingKey {
             case identifier
