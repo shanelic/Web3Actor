@@ -60,12 +60,12 @@ public struct Opensea {
     
     public struct NFT: Codable, Hashable {
         let identifier: String
-        let collection: String
+        public let collection: String
         let contract: String
         let tokenStandard: ERC
-        let name: String
-        let description: String
-        let imageUrl: String?
+        public let name: String
+        public let description: String
+        public let imageUrl: String?
         let metadataUrl: String
 //        let createdAt: Date
 //        let updatedAt: Date
