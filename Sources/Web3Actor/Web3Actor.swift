@@ -17,6 +17,7 @@ public actor Web3Actor {
     private var contracts: [String: EthereumContract] = [:]
     
     @Published public var collectibles: [Opensea.Collection] = []
+    @Published private(set) var nfts: Set<Opensea.NFT> = []
     
     public func initialize(_ network: Network, openseaApiKey: String? = nil, etherscanApiKey: String? = nil) async {
         await switchNetwork(network)
@@ -36,7 +37,7 @@ public actor Web3Actor {
     private func connect(to rpcServer: Network.RpcServer) async -> Bool {
         guard let version = try? await Web3(rpcURL: rpcServer.url).clientVersion().async() else { return false }
         print("--- the version of rpc server just initialized is: \(version)")
-        self.web3 = Web3(rpcURL: rpcServer.url)
+        web3 = Web3(rpcURL: rpcServer.url)
         return true
     }
     
@@ -67,6 +68,7 @@ public actor Web3Actor {
     /// This is only for personal usage now.
     public func getNFTs(of address: EthereumAddress, nextCursor: String? = nil) async throws -> String? {
         let (nfts, cursor) = try await retrieveNFTs(for: address, limit: 20, nextCursor: nextCursor)
+        self.nfts.formUnion(nfts)
         print("--- \(nfts.count) NFT(s) loaded from OpenSea.", nfts.map(\.name))
         return cursor
     }
