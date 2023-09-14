@@ -18,5 +18,6 @@ final class Web3ActorTests: XCTestCase {
         while cursor != nil {
             cursor = try await Web3Actor.shared.getNFTs(of: address, nextCursor: cursor)
         }
+        print(await Web3Actor.shared.nfts.map(\.name))
     }
 }

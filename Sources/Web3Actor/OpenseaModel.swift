@@ -58,7 +58,7 @@ public struct Opensea {
         }
     }
     
-    public struct NFT: Codable {
+    public struct NFT: Codable, Hashable {
         let identifier: String
         let collection: String
         let contract: String
